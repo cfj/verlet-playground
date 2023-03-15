@@ -1,10 +1,13 @@
 class Particle {
-  constructor(x, y, mass) {
+  constructor(x, y, mass, isPinned) {
     this.x = x;
     this.y = y;
     this.prevX = x;
     this.prevY = y;
     this.mass = mass;
+    this.isPinned = isPinned;
+    this.initX = x;
+    this.initY = y;
   }
 
   update(deltaTime, acceleration) {
@@ -15,6 +18,11 @@ class Particle {
 
     this.prevX = prevPosition.x;
     this.prevY = prevPosition.y;
+
+    if (this.isPinned) {
+      this.x = this.initX;
+      this.y = this.initY;
+    }
   }
 }
 
@@ -60,27 +68,44 @@ function setup() {
   const width = canvas.width;
   const height = canvas.height;
   let previousTimeStamp = 0;
+  let attachmentThreshold = 30;
+  let attached = false;
 
   canvas.addEventListener("mousemove", (e) => {
     mouseX = e.offsetX;
     mouseY = e.offsetY;
   });
 
+  // canvas.addEventListener("click", () => {
+  //   attachmentThreshold = attachmentThreshold ? 0 : 30;
+  // });
+
+  canvas.addEventListener("mousedown", () => {
+    attached = true;
+  });
+
+  canvas.addEventListener("mouseup", () => {
+    attached = false;
+  });
+
+  const numParticles = 12;
   const particles = [];
   const sticks = [];
 
-  let pA = new Particle(220, 20, 10000);
-  let pB = new Particle(280, 20, 10000);
-  let pC = new Particle(280, 60, 10000);
-  let pD = new Particle(220, 80, 10000);
-  particles.push(pA, pB, pC, pD);
+  for (let i = 0; i < numParticles; i++) {
+    const startX = width / 2;
+    const particle = new Particle(startX, i * 10, 10000, i === 0);
+    particles.push(particle);
 
-  let stickAB = new Stick(pA, pB, getDistance(pA, pB));
-  let stickBC = new Stick(pB, pC, getDistance(pB, pC));
-  let stickCD = new Stick(pC, pD, getDistance(pC, pD));
-  let stickDA = new Stick(pD, pA, getDistance(pD, pA));
-  let stickAC = new Stick(pA, pC, getDistance(pA, pC));
-  sticks.push(stickAB, stickBC, stickCD, stickDA, stickAC);
+    let stickStartPoint = i > 0 ? particles[i - 1] : { x: startX - 1, y: 0 };
+
+    const stick = new Stick(
+      stickStartPoint,
+      particles[i],
+      getDistance(stickStartPoint, particles[i])
+    );
+    sticks.push(stick);
+  }
 
   const draw = (timestamp) => {
     const elapsed = previousTimeStamp ? timestamp - previousTimeStamp : 0;
@@ -88,13 +113,26 @@ function setup() {
 
     ctx.clearRect(0, 0, width, height);
 
-    drawLine(ctx, width / 2, 0, mouseX, mouseY);
-    drawCircle(ctx, mouseX, mouseY, 10);
+    // drawLine(ctx, width / 2, 0, mouseX, mouseY);
+    // drawCircle(ctx, mouseX, mouseY, 10);
+
+    if (
+      getDistance(particles[numParticles - 1], { x: mouseX, y: mouseY }) <
+      attachmentThreshold
+    ) {
+      canvas.style.cursor = "pointer";
+      if (attached) {
+        particles[numParticles - 1].x = mouseX;
+        particles[numParticles - 1].y = mouseY;
+      }
+    } else {
+      canvas.style.cursor = "default";
+    }
 
     // Update particle positions
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i];
-      const force = { x: 0.0, y: 5 };
+      const force = { x: 0.0, y: 9.82 };
 
       const acceleration = {
         x: force.x / particle.mass,
@@ -122,7 +160,12 @@ function setup() {
 
     // Draw particles
     for (let i = 0; i < particles.length; i++) {
-      drawCircle(ctx, particles[i].x, particles[i].y, 5);
+      drawCircle(
+        ctx,
+        particles[i].x,
+        particles[i].y,
+        i === particles.length - 1 ? 8 : 3
+      );
     }
 
     // Draw sticks
