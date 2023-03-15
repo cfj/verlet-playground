@@ -78,12 +78,18 @@ function setup(onDragged) {
   const dragStart = { x: 0, y: 0 };
   const particleMass = 10_000;
   const handleMass = 20_000;
-  const dragThreshold = 650;
-  const numParticles = 15;
+  const dragThreshold = 150;
+  const numParticles = 20;
   const ropeLength = 100;
   const particles = [];
   const sticks = [];
   const startX = width / 2;
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      previousTimeStamp = 0;
+    }
+  });
 
   canvas.addEventListener("mousemove", (e) => {
     mouseX = e.offsetX;
@@ -119,7 +125,7 @@ function setup(onDragged) {
     const particle = new Particle(
       startX,
       i * (ropeLength / numParticles),
-      i < numParticles ? particleMass : handleMass,
+      i < numParticles - 1 ? particleMass : handleMass,
       i === 0
     );
     particles.push(particle);
@@ -135,7 +141,7 @@ function setup(onDragged) {
   }
 
   const draw = (timestamp) => {
-    const elapsed = previousTimeStamp ? timestamp - previousTimeStamp : 0;
+    const elapsed = previousTimeStamp ? timestamp - previousTimeStamp : 1;
     previousTimeStamp = timestamp;
 
     ctx.clearRect(0, 0, width, height);
@@ -163,7 +169,7 @@ function setup(onDragged) {
     // Update particle positions
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i];
-      const force = { x: 0.0, y: GRAVITY };
+      const force = { x: 0, y: GRAVITY };
 
       const acceleration = {
         x: force.x / particle.mass,
@@ -182,17 +188,6 @@ function setup(onDragged) {
       const diffLength = getLength(diff);
       const diffFactor = ((stick.length - diffLength) / diffLength) * 0.5;
       const offset = { x: diff.x * diffFactor, y: diff.y * diffFactor };
-
-      // // console.log(offset);
-      // if (offset.x > 0 && offset.x < 0.0001) {
-      //   console.log("small x", offset.x);
-      //   offset.x = 0;
-      // }
-
-      // if (offset.y > 0 && offset.y < 0.0001) {
-      //   console.log("small y", offset.y);
-      //   offset.y = 0;
-      // }
 
       // Move points toward each other
       stick.p1.x += offset.x;
