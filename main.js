@@ -61,7 +61,8 @@ function keepInsideView(particle, width, height) {
 function setup(onDragged) {
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
-  ctx.strokeStyle = "#D1156A";
+  ctx.strokeStyle = "#93370D";
+  ctx.fillStyle = "#FDB022";
   ctx.lineWidth = 2;
   let mouseX = 0;
   let mouseY = 0;
@@ -72,15 +73,17 @@ function setup(onDragged) {
   let mouseDown = false;
   let attachedToMouse = false;
   const handleSize = 8;
-  const particleSize = 3;
+  const particleSize = 0;
   const GRAVITY = 9.82;
   const dragStart = { x: 0, y: 0 };
   const particleMass = 10_000;
-  const handleMass = 50_000;
-  const dragThreshold = 150;
-  const numParticles = 12;
+  const handleMass = 20_000;
+  const dragThreshold = 650;
+  const numParticles = 15;
+  const ropeLength = 100;
   const particles = [];
   const sticks = [];
+  const startX = width / 2;
 
   canvas.addEventListener("mousemove", (e) => {
     mouseX = e.offsetX;
@@ -113,16 +116,15 @@ function setup(onDragged) {
 
   // Create particles and sticks
   for (let i = 0; i < numParticles; i++) {
-    const startX = width / 2;
     const particle = new Particle(
       startX,
-      i * 10,
+      i * (ropeLength / numParticles),
       i < numParticles ? particleMass : handleMass,
       i === 0
     );
     particles.push(particle);
 
-    let stickStartPoint = i > 0 ? particles[i - 1] : { x: startX - 1, y: 0 };
+    let stickStartPoint = i > 0 ? particles[i - 1] : { x: startX - 0.01, y: 0 };
 
     const stick = new Stick(
       stickStartPoint,
@@ -181,21 +183,22 @@ function setup(onDragged) {
       const diffFactor = ((stick.length - diffLength) / diffLength) * 0.5;
       const offset = { x: diff.x * diffFactor, y: diff.y * diffFactor };
 
+      // // console.log(offset);
+      // if (offset.x > 0 && offset.x < 0.0001) {
+      //   console.log("small x", offset.x);
+      //   offset.x = 0;
+      // }
+
+      // if (offset.y > 0 && offset.y < 0.0001) {
+      //   console.log("small y", offset.y);
+      //   offset.y = 0;
+      // }
+
       // Move points toward each other
       stick.p1.x += offset.x;
       stick.p1.y += offset.y;
       stick.p2.x -= offset.x;
       stick.p2.y -= offset.y;
-    }
-
-    // Draw particles
-    for (let i = 0; i < particles.length; i++) {
-      drawCircle(
-        ctx,
-        particles[i].x,
-        particles[i].y,
-        i === particles.length - 1 ? handleSize : particleSize
-      );
     }
 
     // Draw sticks
@@ -209,6 +212,19 @@ function setup(onDragged) {
       );
     }
 
+    // Draw particles
+    for (let i = 0; i < particles.length; i++) {
+      const isHandle = i === particles.length - 1;
+
+      drawCircle(
+        ctx,
+        particles[i].x,
+        particles[i].y,
+        isHandle ? handleSize : particleSize,
+        isHandle
+      );
+    }
+
     window.requestAnimationFrame(draw);
   };
 
@@ -219,10 +235,14 @@ const handler = () => console.log("click!");
 
 setup(handler);
 
-function drawCircle(ctx, x, y, radius) {
+function drawCircle(ctx, x, y, radius, fill) {
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, 2 * Math.PI);
-  ctx.stroke();
+  if (fill) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
 }
 
 function drawLine(ctx, startX, startY, endX, endY) {
