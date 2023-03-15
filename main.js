@@ -67,11 +67,20 @@ function setup() {
   });
 
   const particles = [];
+  const sticks = [];
+
   let pA = new Particle(220, 20, 10000);
   let pB = new Particle(280, 20, 10000);
   let pC = new Particle(280, 60, 10000);
-  let pD = new Particle(220, 60, 10000);
+  let pD = new Particle(220, 80, 10000);
   particles.push(pA, pB, pC, pD);
+
+  let stickAB = new Stick(pA, pB, getDistance(pA, pB));
+  let stickBC = new Stick(pB, pC, getDistance(pB, pC));
+  let stickCD = new Stick(pC, pD, getDistance(pC, pD));
+  let stickDA = new Stick(pD, pA, getDistance(pD, pA));
+  let stickAC = new Stick(pA, pC, getDistance(pA, pC));
+  sticks.push(stickAB, stickBC, stickCD, stickDA, stickAC);
 
   const draw = (timestamp) => {
     const elapsed = previousTimeStamp ? timestamp - previousTimeStamp : 0;
@@ -82,6 +91,7 @@ function setup() {
     drawLine(ctx, width / 2, 0, mouseX, mouseY);
     drawCircle(ctx, mouseX, mouseY, 10);
 
+    // Update particle positions
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i];
       const force = { x: 0.0, y: 5 };
@@ -93,7 +103,37 @@ function setup() {
 
       particle.update(elapsed, acceleration);
       keepInsideView(particle, width, height);
-      drawCircle(ctx, particle.x, particle.y, 5);
+    }
+
+    // Apply stick constraints to particles
+    for (let i = 0; i < sticks.length; i++) {
+      const stick = sticks[i];
+
+      const diff = getDifference(stick.p1, stick.p2);
+      const diffLength = getLength(diff);
+      const diffFactor = ((stick.length - diffLength) / diffLength) * 0.5;
+      const offset = { x: diff.x * diffFactor, y: diff.y * diffFactor };
+
+      stick.p1.x += offset.x;
+      stick.p1.y += offset.y;
+      stick.p2.x -= offset.x;
+      stick.p2.y -= offset.y;
+    }
+
+    // Draw particles
+    for (let i = 0; i < particles.length; i++) {
+      drawCircle(ctx, particles[i].x, particles[i].y, 5);
+    }
+
+    // Draw sticks
+    for (let i = 0; i < sticks.length; i++) {
+      drawLine(
+        ctx,
+        sticks[i].p1.x,
+        sticks[i].p1.y,
+        sticks[i].p2.x,
+        sticks[i].p2.y
+      );
     }
 
     window.requestAnimationFrame(draw);
