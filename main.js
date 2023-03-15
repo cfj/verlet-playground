@@ -58,10 +58,10 @@ function keepInsideView(particle, width, height) {
   if (particle.x < 0) particle.x = 0;
 }
 
-function setup() {
+function setup(onDragged) {
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
-  ctx.strokeStyle = "red";
+  ctx.strokeStyle = "#D1156A";
   ctx.lineWidth = 2;
   let mouseX = 0;
   let mouseY = 0;
@@ -69,32 +69,57 @@ function setup() {
   const height = canvas.height;
   let previousTimeStamp = 0;
   let attachmentThreshold = 30;
-  let attached = false;
-
-  canvas.addEventListener("mousemove", (e) => {
-    mouseX = e.offsetX;
-    mouseY = e.offsetY;
-  });
-
-  // canvas.addEventListener("click", () => {
-  //   attachmentThreshold = attachmentThreshold ? 0 : 30;
-  // });
-
-  canvas.addEventListener("mousedown", () => {
-    attached = true;
-  });
-
-  canvas.addEventListener("mouseup", () => {
-    attached = false;
-  });
-
+  let mouseDown = false;
+  let attachedToMouse = false;
+  const handleSize = 8;
+  const particleSize = 3;
+  const GRAVITY = 9.82;
+  const dragStart = { x: 0, y: 0 };
+  const particleMass = 10_000;
+  const handleMass = 50_000;
+  const dragThreshold = 150;
   const numParticles = 12;
   const particles = [];
   const sticks = [];
 
+  canvas.addEventListener("mousemove", (e) => {
+    mouseX = e.offsetX;
+    mouseY = e.offsetY;
+
+    if (attachedToMouse) {
+      const distanceDragged = getDistance(dragStart, {
+        x: e.offsetX,
+        y: e.offsetY,
+      });
+
+      if (distanceDragged > dragThreshold) {
+        mouseDown = false;
+        attachedToMouse = false;
+        onDragged();
+      }
+    }
+  });
+
+  canvas.addEventListener("mousedown", (e) => {
+    mouseDown = true;
+    dragStart.x = e.offsetX;
+    dragStart.y = e.offsetY;
+  });
+
+  canvas.addEventListener("mouseup", () => {
+    mouseDown = false;
+    attachedToMouse = false;
+  });
+
+  // Create particles and sticks
   for (let i = 0; i < numParticles; i++) {
     const startX = width / 2;
-    const particle = new Particle(startX, i * 10, 10000, i === 0);
+    const particle = new Particle(
+      startX,
+      i * 10,
+      i < numParticles ? particleMass : handleMass,
+      i === 0
+    );
     particles.push(particle);
 
     let stickStartPoint = i > 0 ? particles[i - 1] : { x: startX - 1, y: 0 };
@@ -113,18 +138,22 @@ function setup() {
 
     ctx.clearRect(0, 0, width, height);
 
-    // drawLine(ctx, width / 2, 0, mouseX, mouseY);
-    // drawCircle(ctx, mouseX, mouseY, 10);
+    const distanceToHandle = getDistance(particles[numParticles - 1], {
+      x: mouseX,
+      y: mouseY,
+    });
 
-    if (
-      getDistance(particles[numParticles - 1], { x: mouseX, y: mouseY }) <
-      attachmentThreshold
-    ) {
+    if (distanceToHandle < attachmentThreshold && mouseDown) {
+      attachedToMouse = true;
+    }
+
+    if (attachedToMouse) {
+      particles[numParticles - 1].x = mouseX;
+      particles[numParticles - 1].y = mouseY;
+    }
+
+    if (distanceToHandle < attachmentThreshold) {
       canvas.style.cursor = "pointer";
-      if (attached) {
-        particles[numParticles - 1].x = mouseX;
-        particles[numParticles - 1].y = mouseY;
-      }
     } else {
       canvas.style.cursor = "default";
     }
@@ -132,7 +161,7 @@ function setup() {
     // Update particle positions
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i];
-      const force = { x: 0.0, y: 9.82 };
+      const force = { x: 0.0, y: GRAVITY };
 
       const acceleration = {
         x: force.x / particle.mass,
@@ -152,6 +181,7 @@ function setup() {
       const diffFactor = ((stick.length - diffLength) / diffLength) * 0.5;
       const offset = { x: diff.x * diffFactor, y: diff.y * diffFactor };
 
+      // Move points toward each other
       stick.p1.x += offset.x;
       stick.p1.y += offset.y;
       stick.p2.x -= offset.x;
@@ -164,7 +194,7 @@ function setup() {
         ctx,
         particles[i].x,
         particles[i].y,
-        i === particles.length - 1 ? 8 : 3
+        i === particles.length - 1 ? handleSize : particleSize
       );
     }
 
@@ -185,7 +215,9 @@ function setup() {
   window.requestAnimationFrame(draw);
 }
 
-setup();
+const handler = () => console.log("click!");
+
+setup(handler);
 
 function drawCircle(ctx, x, y, radius) {
   ctx.beginPath();
