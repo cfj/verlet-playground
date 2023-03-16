@@ -84,6 +84,21 @@ function setup(onDragged) {
   const particles = [];
   const sticks = [];
   const startX = width / 2;
+  let angle = 0;
+  const force = {
+    x: GRAVITY * Math.cos(((90 - angle) * Math.PI) / 180),
+    y: GRAVITY * Math.sin(((90 - angle) * Math.PI) / 180),
+  };
+
+  window.addEventListener(
+    "deviceorientation",
+    (e) => {
+      angle = e.alpha;
+      force.x = GRAVITY * Math.cos(((90 - angle) * Math.PI) / 180);
+      force.y = GRAVITY * Math.sin(((90 - angle) * Math.PI) / 180);
+    },
+    true
+  );
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
@@ -206,7 +221,6 @@ function setup(onDragged) {
     // Update particle positions
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i];
-      const force = { x: 0, y: GRAVITY };
 
       const acceleration = {
         x: force.x / particle.mass,
