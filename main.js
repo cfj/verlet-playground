@@ -91,7 +91,28 @@ function setup(onDragged) {
     }
   });
 
-  canvas.addEventListener("mousemove", (e) => {
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.touches[0].clientX - rect.x;
+    mouseY = e.touches[0].clientY - rect.y;
+
+    if (attachedToMouse) {
+      const distanceDragged = getDistance(dragStart, {
+        x: e.touches[0].clientX - rect.x,
+        y: e.touches[0].clientY - rect.y,
+      });
+
+      if (distanceDragged > dragThreshold) {
+        mouseDown = false;
+        attachedToMouse = false;
+        onDragged();
+      }
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    e.preventDefault();
     mouseX = e.offsetX;
     mouseY = e.offsetY;
 
@@ -107,18 +128,34 @@ function setup(onDragged) {
         onDragged();
       }
     }
-  });
+  };
 
-  canvas.addEventListener("mousedown", (e) => {
+  const handleMouseDown = (e) => {
+    e.preventDefault();
     mouseDown = true;
     dragStart.x = e.offsetX;
     dragStart.y = e.offsetY;
-  });
+  };
 
-  canvas.addEventListener("mouseup", () => {
+  const handleMouseUp = () => {
     mouseDown = false;
     attachedToMouse = false;
-  });
+  };
+
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    mouseDown = true;
+    const rect = canvas.getBoundingClientRect();
+    dragStart.x = e.touches[0].clientX - rect.x;
+    dragStart.y = e.touches[0].clientY - rect.y;
+  };
+
+  canvas.addEventListener("mousemove", handleMouseMove);
+  canvas.addEventListener("mousedown", handleMouseDown);
+  canvas.addEventListener("mouseup", handleMouseUp);
+  canvas.addEventListener("touchmove", handleTouchMove);
+  canvas.addEventListener("touchstart", handleTouchStart);
+  canvas.addEventListener("touchend", handleMouseUp);
 
   // Create particles and sticks
   for (let i = 0; i < numParticles; i++) {
