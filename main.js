@@ -84,7 +84,7 @@ function setup(onDragged) {
   const particles = [];
   const sticks = [];
   const startX = width / 2;
-  let angle = 0;
+  let angle = 90;
   const force = {
     x: GRAVITY * Math.cos(((90 - angle) * Math.PI) / 180),
     y: GRAVITY * Math.sin(((90 - angle) * Math.PI) / 180),
