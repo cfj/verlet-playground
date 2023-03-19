@@ -72,8 +72,8 @@ function setup(onDragged) {
   let attachmentThreshold = 30;
   let mouseDown = false;
   let attachedToMouse = false;
-  const handleSize = 8;
-  const particleSize = 0;
+  const handleSize = 10;
+  const particleSize = 1;
   const GRAVITY = 9.82;
   const dragStart = { x: 0, y: 0 };
   const particleMass = 10_000;
@@ -81,6 +81,7 @@ function setup(onDragged) {
   const dragThreshold = 150;
   const numParticles = 20;
   const ropeLength = 100;
+  const constraintIterations = 20;
   const particles = [];
   const sticks = [];
   const startX = width / 2;
@@ -232,19 +233,23 @@ function setup(onDragged) {
     }
 
     // Apply stick constraints to particles
-    for (let i = 0; i < sticks.length; i++) {
-      const stick = sticks[i];
+    for (let j = 0; j < constraintIterations; j++) {
+      for (let i = 0; i < sticks.length; i++) {
+        const stick = sticks[i];
 
-      const diff = getDifference(stick.p1, stick.p2);
-      const diffLength = getLength(diff);
-      const diffFactor = ((stick.length - diffLength) / diffLength) * 0.5;
-      const offset = { x: diff.x * diffFactor, y: diff.y * diffFactor };
+        const diff = getDifference(stick.p1, stick.p2);
+        const diffLength = getLength(diff);
+        const diffFactor = ((stick.length - diffLength) / diffLength) * 0.5;
+        const offset = { x: diff.x * diffFactor, y: diff.y * diffFactor };
 
-      // Move points toward each other
-      stick.p1.x += offset.x;
-      stick.p1.y += offset.y;
-      stick.p2.x -= offset.x;
-      stick.p2.y -= offset.y;
+        if (!stick.p1.isPinned) {
+          // Move points toward each other
+          stick.p1.x += offset.x;
+          stick.p1.y += offset.y;
+        }
+        stick.p2.x -= offset.x;
+        stick.p2.y -= offset.y;
+      }
     }
 
     // Draw sticks
